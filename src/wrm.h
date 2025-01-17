@@ -2,6 +2,8 @@
 #include <raylib.h>
 #include <raymath.h>
 
+#include <optional>
+
 #include "common.h"
 
 #define WRM_HSPEED 1
@@ -10,6 +12,23 @@
 #define WRM_AIM_SPEED 1
 #define WRM_SHOOT_MAX_FORCE 100.0
 #define WRM_SHOOT_FORCE_INCREMENT 2.0
+
+enum class WrmCommandKind {
+  FIRE,
+};
+
+struct WrmCommandFire {
+  Vector2 pos;
+  float angle;
+  float force;
+};
+
+struct WrmCommand {
+  union command {
+    WrmCommandFire fire;
+  };
+  WrmCommandKind kind;
+};
 
 struct Wrm {
   Vector2 pos;
@@ -36,10 +55,12 @@ struct Wrm {
     DrawCircleV(aim_pos, 20.0f, MAGENTA);
   }
 
-  void update(Color *colors) {
+  std::optional<WrmCommand> update(Color *colors) {
     update_movement(colors);
     update_aim();
     update_shoot();
+
+    return {};
   }
 
   void update_shoot() {

@@ -1,7 +1,9 @@
 #include <raylib.h>
 
+#include <algorithm>
 #include <vector>
 
+#include "bullet.h"
 #include "common.h"
 #include "wrm.h"
 
@@ -9,6 +11,7 @@ struct App {
   RenderTexture2D render_texture;
   std::vector<Wrm> wrms{};
   int active_worm = -1;
+  std::vector<Bullet> bullets{};
 
   App() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Wrms");
@@ -56,6 +59,11 @@ struct App {
   }
 
   void update(Color *colors) {
+    for (auto bullet : bullets) {
+      bullet.update();
+    }
+    bullets.erase(std::remove_if(bullets.begin(), bullets.end(), [](auto &bullet) { return bullet.is_dead; }));
+
     if (active_worm >= 0) {
       wrms[active_worm].update(colors);
     }
