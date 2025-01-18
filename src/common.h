@@ -12,6 +12,7 @@
 
 enum class CommandKind {
   FIRE,
+  EXPLOSION,
 };
 
 struct CommandFire {
@@ -20,13 +21,22 @@ struct CommandFire {
   float force;
 };
 
+struct CommandExplosion {
+  Vector2 pos;
+};
+
 struct Command {
   union {
     CommandFire fire;
+    CommandExplosion explosion;
   };
   CommandKind kind;
 };
 
 Command make_fire_command(Vector2 pos, float angle, float force) {
   return Command{.fire = {pos, angle, force}, .kind = CommandKind::FIRE};
+}
+
+Command make_explosion_command(Vector2 pos) {
+  return Command{.explosion = {pos}, .kind = CommandKind::EXPLOSION};
 }

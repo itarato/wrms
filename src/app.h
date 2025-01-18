@@ -65,7 +65,7 @@ struct App {
     std::vector<Command> output_commands{};
 
     for (auto &bullet : bullets) {
-      bullet.update();
+      bullet.update(output_commands, colors);
     }
     bullets.erase(std::remove_if(bullets.begin(), bullets.end(), [](const auto &bullet) { return bullet.is_dead; }),
                   bullets.end());
@@ -84,6 +84,10 @@ struct App {
     for (Command command : output_commands) {
       if (command.kind == CommandKind::FIRE) {
         bullets.emplace_back(command.fire);
+      } else if (command.kind == CommandKind::EXPLOSION) {
+        BeginTextureMode(render_texture);
+        DrawCircle(command.explosion.pos.x, SCREEN_HEIGHT - command.explosion.pos.y, 60.0f, EMPTY_MASK_COLOR);
+        EndTextureMode();
       } else {
         TraceLog(LOG_ERROR, "Invalid command");
       }

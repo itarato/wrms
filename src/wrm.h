@@ -15,7 +15,7 @@
 struct Wrm {
   Vector2 pos;
   Vector2 frame;
-  float aim_angle{0.0f};
+  float __aim_angle{135.0f};
   bool is_dir_right{true};
   float shoot_force{0.0f};
 
@@ -32,12 +32,19 @@ struct Wrm {
 
     Vector2 fire_center = get_fire_center();
     Vector2 aim_pos{
-        cosf(DEG2RAD * aim_angle) * WRM_AIM_CROSS_DIST + fire_center.x,
-        sinf(DEG2RAD * aim_angle) * WRM_AIM_CROSS_DIST + fire_center.y,
+        sinf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST + fire_center.x,
+        cosf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST + fire_center.y,
     };
     DrawCircleV(aim_pos, 20.0f, MAGENTA);
 
     if (shoot_force > 0.0f) {
+      float force_percentage = shoot_force / (float)WRM_SHOOT_MAX_FORCE;
+      Vector2 force_end_pos{
+          sinf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST * force_percentage + fire_center.x,
+          cosf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST * force_percentage + fire_center.y,
+      };
+      DrawLineEx(get_fire_center(), force_end_pos, 10.0, PURPLE);
+
       DrawText(TextFormat("%03.2f", shoot_force), pos.x, pos.y + frame.y + 20.0f, 20, BLACK);
     }
   }
@@ -47,6 +54,14 @@ struct Wrm {
       return Vector2Add(pos, {frame.x, 0.0f});
     } else {
       return pos;
+    }
+  }
+
+  float get_aim_angle() const {
+    if (is_dir_right) {
+      return __aim_angle;
+    } else {
+      return 360.0f - __aim_angle;
     }
   }
 
@@ -61,17 +76,20 @@ struct Wrm {
       shoot_force += WRM_SHOOT_FORCE_INCREMENT;
       if (shoot_force > WRM_SHOOT_MAX_FORCE) shoot_force = WRM_SHOOT_MAX_FORCE;
     } else if (shoot_force > 0.0f) {
-      output_commands.push_back(make_fire_command(get_fire_center(), aim_angle, shoot_force));
+      output_commands.push_back(make_fire_command(get_fire_center(), get_aim_angle(), shoot_force));
       shoot_force = 0.0f;
     }
   }
 
   void update_aim() {
     if (IsKeyDown(KEY_UP)) {
-      aim_angle += WRM_AIM_SPEED;
+      __aim_angle += WRM_AIM_SPEED;
+
+      if (__aim_angle > 180.0f) __aim_angle = 180.0f;
     }
     if (IsKeyDown(KEY_DOWN)) {
-      aim_angle -= WRM_AIM_SPEED;
+      __aim_angle -= WRM_AIM_SPEED;
+      if (__aim_angle < 0.0f) __aim_angle = 0.0f;
     }
   }
 

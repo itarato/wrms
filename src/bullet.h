@@ -14,14 +14,14 @@ struct Bullet {
 
   Bullet(CommandFire &command) {
     pos = command.pos;
-    v = Vector2{cosf(command.angle * DEG2RAD) * command.force, sinf(command.angle * DEG2RAD) * command.force};
+    v = Vector2{sinf(command.angle * DEG2RAD) * command.force, cosf(command.angle * DEG2RAD) * command.force};
   }
 
   void draw() const {
     DrawCircleV(pos, 10.0f, BLUE);
   }
 
-  void update() {
+  void update(std::vector<Command> &output_commands, Color *colors) {
     if (fabs(v.y) < GRAVITY_FALL_THRESHOLD) {
       v.y = GRAVITY_FALL_THRESHOLD;
     } else if (v.y < 0.0f) {
@@ -35,6 +35,13 @@ struct Bullet {
 
     if (pos.x < 0 || pos.y < 0 || pos.x >= SCREEN_WIDTH || pos.y >= SCREEN_HEIGHT) {
       is_dead = true;
+      return;
+    }
+
+    if (ColorIsEqual(colors[(int)pos.y * SCREEN_WIDTH + (int)pos.x], FILLED_MASK_COLOR)) {
+      output_commands.push_back(make_explosion_command(pos));
+      is_dead = true;
+      return;
     }
   }
 };
