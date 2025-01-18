@@ -1,8 +1,7 @@
+#pragma once
 
 #include <raylib.h>
 #include <raymath.h>
-
-#include <optional>
 
 #include "common.h"
 
@@ -10,25 +9,8 @@
 #define WRM_MOVE_LIFT_THRESHOLD -5
 #define WRM_AIM_CROSS_DIST 100
 #define WRM_AIM_SPEED 1
-#define WRM_SHOOT_MAX_FORCE 100.0
-#define WRM_SHOOT_FORCE_INCREMENT 2.0
-
-enum class WrmCommandKind {
-  FIRE,
-};
-
-struct WrmCommandFire {
-  Vector2 pos;
-  float angle;
-  float force;
-};
-
-struct WrmCommand {
-  union command {
-    WrmCommandFire fire;
-  };
-  WrmCommandKind kind;
-};
+#define WRM_SHOOT_MAX_FORCE 20.0f
+#define WRM_SHOOT_FORCE_INCREMENT 0.1f
 
 struct Wrm {
   Vector2 pos;
@@ -48,26 +30,38 @@ struct Wrm {
       DrawTriangle(pos, Vector2Add(pos, {0.0f, frame.y}), Vector2Add(pos, frame), BROWN);
     }
 
+    Vector2 fire_center = get_fire_center();
     Vector2 aim_pos{
-        cosf(DEG2RAD * aim_angle) * WRM_AIM_CROSS_DIST + pos.x,
-        sinf(DEG2RAD * aim_angle) * WRM_AIM_CROSS_DIST + pos.y,
+        cosf(DEG2RAD * aim_angle) * WRM_AIM_CROSS_DIST + fire_center.x,
+        sinf(DEG2RAD * aim_angle) * WRM_AIM_CROSS_DIST + fire_center.y,
     };
     DrawCircleV(aim_pos, 20.0f, MAGENTA);
+
+    if (shoot_force > 0.0f) {
+      DrawText(TextFormat("%03.2f", shoot_force), pos.x, pos.y + frame.y + 20.0f, 20, BLACK);
+    }
   }
 
-  std::optional<WrmCommand> update(Color *colors) {
+  Vector2 get_fire_center() const {
+    if (is_dir_right) {
+      return Vector2Add(pos, {frame.x, 0.0f});
+    } else {
+      return pos;
+    }
+  }
+
+  void update(std::vector<Command> &output_commands, Color *colors) {
     update_movement(colors);
     update_aim();
-    update_shoot();
-
-    return {};
+    update_shoot(output_commands);
   }
 
-  void update_shoot() {
+  void update_shoot(std::vector<Command> &output_commands) {
     if (IsKeyDown(KEY_SPACE)) {
       shoot_force += WRM_SHOOT_FORCE_INCREMENT;
       if (shoot_force > WRM_SHOOT_MAX_FORCE) shoot_force = WRM_SHOOT_MAX_FORCE;
     } else if (shoot_force > 0.0f) {
+      output_commands.push_back(make_fire_command(get_fire_center(), aim_angle, shoot_force));
       shoot_force = 0.0f;
     }
   }

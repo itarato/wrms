@@ -1,6 +1,9 @@
+#pragma once
+
 #include <raylib.h>
 
 #include <algorithm>
+#include <cstdio>
 #include <vector>
 
 #include "bullet.h"
@@ -59,13 +62,16 @@ struct App {
   }
 
   void update(Color *colors) {
-    for (auto bullet : bullets) {
+    std::vector<Command> output_commands{};
+
+    for (auto &bullet : bullets) {
       bullet.update();
     }
-    bullets.erase(std::remove_if(bullets.begin(), bullets.end(), [](auto &bullet) { return bullet.is_dead; }));
+    bullets.erase(std::remove_if(bullets.begin(), bullets.end(), [](const auto &bullet) { return bullet.is_dead; }),
+                  bullets.end());
 
     if (active_worm >= 0) {
-      wrms[active_worm].update(colors);
+      wrms[active_worm].update(output_commands, colors);
     }
 
     if (IsMouseButtonPressed(0)) {
@@ -74,11 +80,23 @@ struct App {
       DrawCircle(mouse_coord.x, SCREEN_HEIGHT - mouse_coord.y, 100.0f, EMPTY_MASK_COLOR);
       EndTextureMode();
     }
+
+    for (Command command : output_commands) {
+      if (command.kind == CommandKind::FIRE) {
+        bullets.emplace_back(command.fire);
+      } else {
+        TraceLog(LOG_ERROR, "Invalid command");
+      }
+    }
   }
 
   void draw() const {
     for (auto wrm : wrms) {
       wrm.draw();
+    }
+
+    for (auto bullet : bullets) {
+      bullet.draw();
     }
   }
 };
