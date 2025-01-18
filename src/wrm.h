@@ -15,6 +15,7 @@
 struct Wrm {
   Vector2 pos;
   Vector2 frame;
+  float g{0.0f};
   float __aim_angle{135.0f};
   bool is_dir_right{true};
   float shoot_force{0.0f};
@@ -127,8 +128,9 @@ struct Wrm {
     }
 
     int bottom_x = pos.x;
-    int bottom_y = pos.y + frame.y;
+    int bottom_y = pos.y;
     int floor_y = next_floor_y(colors, bottom_x, bottom_y);
+    // TraceLog(LOG_WARNING, "Current Y: %f Next Y: %d", pos.y, floor_y);
     int floor_y_diff = floor_y - pos.y;
 
     if (floor_y_diff >= WRM_MOVE_LIFT_THRESHOLD) {
@@ -143,7 +145,8 @@ struct Wrm {
  private:
   int next_floor_y(Color *colors, int for_x, int for_y) {
     int y = for_y;
-    Color c = colors[y * SCREEN_WIDTH + for_x];
+    // Color c = colors[for_y * SCREEN_WIDTH + for_x];
+    // TraceLog(LOG_WARNING, "Color at x=%d y=%d -> R=%d G=%d B=%d A=%d", for_x, for_y, c.r, c.g, c.b, c.a);
 
     if (color_is_transparent(colors[y * SCREEN_WIDTH + for_x])) {
       for (; y < SCREEN_HEIGHT; y++) {
@@ -153,13 +156,19 @@ struct Wrm {
         }
       }
     } else {
-      for (; y >= 0; y--) {
+      for (; y > 0; y--) {
         if (color_is_transparent(colors[y * SCREEN_WIDTH + for_x])) {
           break;
         }
       }
     }
 
-    return y;
+    if (y < 0) {
+      return 0;
+    } else if (y >= SCREEN_HEIGHT) {
+      return SCREEN_HEIGHT - 1;
+    } else {
+      return y;
+    }
   }
 };

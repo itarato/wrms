@@ -18,7 +18,7 @@ struct Bullet {
   }
 
   void draw() const {
-    DrawCircleV(pos, 10.0f, BLUE);
+    DrawCircleV(pos, 10.0f, ORANGE);
   }
 
   void update(std::vector<Command> &output_commands, Color *colors) {

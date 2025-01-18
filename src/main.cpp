@@ -10,6 +10,8 @@
 #include "app.h"
 
 int main(void) {
+  SetTraceLogLevel(LOG_WARNING);
+
   App app{};
   app.loop();
 
