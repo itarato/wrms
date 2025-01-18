@@ -21,11 +21,22 @@ struct App {
     SetTargetFPS(120);
 
     render_texture = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
+    Image background_image = LoadImage("./data/background_1.png");
+    Color *background_colors = LoadImageColors(background_image);
 
     BeginTextureMode(render_texture);
-    ClearBackground(EMPTY_MASK_COLOR);
-    DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT / 2, FILLED_MASK_COLOR);
+    ClearBackground(TRANSPARENT_COLOR);
+    for (int y = 0; y < SCREEN_HEIGHT; y++) {
+      for (int x = 0; x < SCREEN_WIDTH; x++) {
+        if (background_colors[y * SCREEN_WIDTH + x].a > 0) {
+          DrawPixel(x, SCREEN_HEIGHT - y - 1, background_colors[y * SCREEN_WIDTH + x]);
+        }
+      }
+    }
     EndTextureMode();
+
+    UnloadImageColors(background_colors);
+    UnloadImage(background_image);
 
     wrms.emplace_back(Vector2{100.0f, 100.0f}, Vector2{60.0f, 40.0f});
     active_worm = 0;
@@ -38,11 +49,8 @@ struct App {
 
   void loop() {
     while (!WindowShouldClose()) {
-      Vector2 mouse_coord = GetMousePosition();
-
       Image image = LoadImageFromTexture(render_texture.texture);
       Color *colors = LoadImageColors(image);
-      Color mouse_color = colors[SCREEN_WIDTH * (int)mouse_coord.y + (int)mouse_coord.x];
 
       update(colors);
 
@@ -77,7 +85,7 @@ struct App {
     if (IsMouseButtonPressed(0)) {
       Vector2 mouse_coord = GetMousePosition();
       BeginTextureMode(render_texture);
-      DrawCircle(mouse_coord.x, SCREEN_HEIGHT - mouse_coord.y, 100.0f, EMPTY_MASK_COLOR);
+      DrawCircle(mouse_coord.x, SCREEN_HEIGHT - mouse_coord.y, 100.0f, TRANSPARENT_COLOR);
       EndTextureMode();
     }
 
@@ -86,7 +94,7 @@ struct App {
         bullets.emplace_back(command.fire);
       } else if (command.kind == CommandKind::EXPLOSION) {
         BeginTextureMode(render_texture);
-        DrawCircle(command.explosion.pos.x, SCREEN_HEIGHT - command.explosion.pos.y, 60.0f, EMPTY_MASK_COLOR);
+        DrawCircle(command.explosion.pos.x, SCREEN_HEIGHT - command.explosion.pos.y, 60.0f, TRANSPARENT_COLOR);
         EndTextureMode();
       } else {
         TraceLog(LOG_ERROR, "Invalid command");

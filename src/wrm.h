@@ -118,24 +118,26 @@ struct Wrm {
 
     if (floor_y_diff >= WRM_MOVE_LIFT_THRESHOLD) {
       pos.y = floor_y - frame.y + 1;
-    } else {
-      pos.x = old_pos_x;
+      return;
     }
+
+    // Got inside a wall - cannot move there - restore movement.
+    pos.x = old_pos_x;
   }
 
  private:
   int next_floor_y(Color *colors, int for_x, int for_y) {
     int y = for_y;
 
-    if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], FILLED_MASK_COLOR)) {
+    if (!ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], TRANSPARENT_COLOR)) {
       for (; y >= 0; y--) {
-        if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], EMPTY_MASK_COLOR)) {
+        if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], TRANSPARENT_COLOR)) {
           break;
         }
       }
     } else {
       for (; y < SCREEN_HEIGHT; y++) {
-        if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], FILLED_MASK_COLOR)) {
+        if (!ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], TRANSPARENT_COLOR)) {
           y--;
           break;
         }
