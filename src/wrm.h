@@ -18,24 +18,19 @@ struct Wrm {
   float __aim_angle{135.0f};
   bool is_dir_right{true};
   float shoot_force{0.0f};
+  Texture2D texture_left;
+  Texture2D texture_right;
+  Texture2D texture_aim;
 
-  Wrm(Vector2 pos, Vector2 frame) : pos(pos), frame(frame) {
+  Wrm(Vector2 pos) : pos(pos) {
+    texture_left = LoadTexture("./data/ghost_left.png");
+    texture_right = LoadTexture("./data/ghost_right.png");
+    texture_aim = LoadTexture("./data/aim.png");
+    frame = Vector2{(float)texture_left.width, (float)texture_left.height};
   }
 
   void draw() const {
-    // DrawRectangleV(pos, frame, BROWN);
-    if (is_dir_right) {
-      DrawTriangle(Vector2Add(pos, {0.0f, frame.y}), Vector2Add(pos, frame), Vector2Add(pos, {frame.x, 0.0f}), BROWN);
-    } else {
-      DrawTriangle(pos, Vector2Add(pos, {0.0f, frame.y}), Vector2Add(pos, frame), BROWN);
-    }
-
     Vector2 fire_center = get_fire_center();
-    Vector2 aim_pos{
-        sinf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST + fire_center.x,
-        cosf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST + fire_center.y,
-    };
-    DrawCircleV(aim_pos, 20.0f, MAGENTA);
 
     if (shoot_force > 0.0f) {
       float force_percentage = shoot_force / (float)WRM_SHOOT_MAX_FORCE;
@@ -43,18 +38,45 @@ struct Wrm {
           sinf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST * force_percentage + fire_center.x,
           cosf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST * force_percentage + fire_center.y,
       };
-      DrawLineEx(get_fire_center(), force_end_pos, 10.0, PURPLE);
-
-      DrawText(TextFormat("%03.2f", shoot_force), pos.x, pos.y + frame.y + 20.0f, 20, BLACK);
+      DrawLineEx(get_fire_center(), force_end_pos, 10.0,
+                 Color{u_int8_t(255.0f * shoot_force / WRM_SHOOT_MAX_FORCE), 0x00, 0x00, 0xff});
     }
+
+    Vector2 texture_draw_pos = Vector2Subtract(pos, {frame.x / 2, frame.y});
+    if (is_dir_right) {
+      DrawTextureV(texture_right, texture_draw_pos, WHITE);
+    } else {
+      DrawTextureV(texture_left, texture_draw_pos, WHITE);
+    }
+
+    Vector2 aim_pos{
+        sinf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST + fire_center.x,
+        cosf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST + fire_center.y,
+    };
+    DrawTexturePro(texture_aim,
+                   {
+                       0.0f,
+                       0.0f,
+                       (float)texture_aim.width,
+                       (float)texture_aim.height,
+                   },
+                   {
+                       aim_pos.x,
+                       aim_pos.y,
+                       (float)texture_aim.width,
+                       (float)texture_aim.height,
+                   },
+                   {
+
+                       (float)texture_aim.width / 2,
+                       (float)texture_aim.height / 2,
+
+                   },
+                   -get_aim_angle(), WHITE);
   }
 
   Vector2 get_fire_center() const {
-    if (is_dir_right) {
-      return Vector2Add(pos, {frame.x, 0.0f});
-    } else {
-      return pos;
-    }
+    return Vector2Subtract(pos, {0.0f, frame.y / 2});
   }
 
   float get_aim_angle() const {
@@ -104,20 +126,13 @@ struct Wrm {
       is_dir_right = true;
     }
 
-    int left_bottom_x = pos.x;
-    int left_bottom_y = pos.y + frame.y;
-    int left_floor_y = next_floor_y(colors, left_bottom_x, left_bottom_y);
-
-    int right_bottom_x = pos.x + frame.x;
-    int right_bottom_y = pos.y + frame.y;
-    int right_floor_y = next_floor_y(colors, right_bottom_x, right_bottom_y);
-
-    int floor_y = std::min(left_floor_y, right_floor_y);
-    int new_pos_y = floor_y - frame.y + 1;
-    int floor_y_diff = new_pos_y - pos.y;
+    int bottom_x = pos.x;
+    int bottom_y = pos.y + frame.y;
+    int floor_y = next_floor_y(colors, bottom_x, bottom_y);
+    int floor_y_diff = floor_y - pos.y;
 
     if (floor_y_diff >= WRM_MOVE_LIFT_THRESHOLD) {
-      pos.y = floor_y - frame.y + 1;
+      pos.y = floor_y;
       return;
     }
 
@@ -128,17 +143,18 @@ struct Wrm {
  private:
   int next_floor_y(Color *colors, int for_x, int for_y) {
     int y = for_y;
+    Color c = colors[y * SCREEN_WIDTH + for_x];
 
-    if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], MASK_COLOR_FILLED)) {
-      for (; y >= 0; y--) {
-        if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], MASK_COLOR_EMPTY)) {
+    if (color_is_transparent(colors[y * SCREEN_WIDTH + for_x])) {
+      for (; y < SCREEN_HEIGHT; y++) {
+        if (!color_is_transparent(colors[y * SCREEN_WIDTH + for_x])) {
+          y--;
           break;
         }
       }
     } else {
-      for (; y < SCREEN_HEIGHT; y++) {
-        if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], MASK_COLOR_FILLED)) {
-          y--;
+      for (; y >= 0; y--) {
+        if (color_is_transparent(colors[y * SCREEN_WIDTH + for_x])) {
           break;
         }
       }

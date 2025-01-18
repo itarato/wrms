@@ -11,7 +11,6 @@
 #include "wrm.h"
 
 struct App {
-  RenderTexture2D render_texture;
   std::vector<Wrm> wrms{};
   int active_worm = -1;
   std::vector<Bullet> bullets{};
@@ -22,38 +21,21 @@ struct App {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Wrms");
     SetTargetFPS(120);
 
-    render_texture = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
     background_texture = LoadTexture("./data/background_1.png");
     foreground_image = LoadImage("./data/foreground_1.png");
-    Color *foreground_colors = LoadImageColors(foreground_image);
 
-    BeginTextureMode(render_texture);
-    ClearBackground(MASK_COLOR_EMPTY);
-    for (int y = 0; y < SCREEN_HEIGHT; y++) {
-      for (int x = 0; x < SCREEN_WIDTH; x++) {
-        if (foreground_colors[y * SCREEN_WIDTH + x].a > 0) {
-          DrawPixel(x, SCREEN_HEIGHT - y - 1, MASK_COLOR_FILLED);
-        }
-      }
-    }
-    EndTextureMode();
-
-    UnloadImageColors(foreground_colors);
-
-    wrms.emplace_back(Vector2{100.0f, 100.0f}, Vector2{60.0f, 40.0f});
+    wrms.emplace_back(Vector2{100.0f, 100.0f});
     active_worm = 0;
   }
 
   ~App() {
-    UnloadRenderTexture(render_texture);
     UnloadImage(foreground_image);
     CloseWindow();
   }
 
   void loop() {
     while (!WindowShouldClose()) {
-      Image image = LoadImageFromTexture(render_texture.texture);
-      Color *colors = LoadImageColors(image);
+      Color *colors = LoadImageColors(foreground_image);
 
       update(colors);
 
@@ -62,7 +44,6 @@ struct App {
       BeginDrawing();
       ClearBackground(RAYWHITE);
 
-      DrawTexture(render_texture.texture, 0, 0, WHITE);
       DrawTexture(background_texture, 0, 0, WHITE);
 
       Texture2D foreground_texture = LoadTextureFromImage(foreground_image);
@@ -91,21 +72,10 @@ struct App {
       wrms[active_worm].update(output_commands, colors);
     }
 
-    if (IsMouseButtonPressed(0)) {
-      Vector2 mouse_coord = GetMousePosition();
-      BeginTextureMode(render_texture);
-      DrawCircle(mouse_coord.x, SCREEN_HEIGHT - mouse_coord.y, 100.0f, MASK_COLOR_EMPTY);
-      EndTextureMode();
-    }
-
     for (Command command : output_commands) {
       if (command.kind == CommandKind::FIRE) {
         bullets.emplace_back(command.fire);
       } else if (command.kind == CommandKind::EXPLOSION) {
-        BeginTextureMode(render_texture);
-        DrawCircle(command.explosion.pos.x, SCREEN_HEIGHT - command.explosion.pos.y, 60.0f, YELLOW);
-        EndTextureMode();
-
         ImageDrawCircle(&foreground_image, command.explosion.pos.x, command.explosion.pos.y, 60.0f,
                         FAKE_TRANSPARENT_COLOR);
         ImageColorReplace(&foreground_image, FAKE_TRANSPARENT_COLOR, TRANSPARENT_COLOR);
