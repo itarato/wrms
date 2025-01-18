@@ -38,7 +38,7 @@ struct Bullet {
       return;
     }
 
-    if (!ColorIsEqual(colors[(int)pos.y * SCREEN_WIDTH + (int)pos.x], TRANSPARENT_COLOR)) {
+    if (ColorIsEqual(colors[(int)pos.y * SCREEN_WIDTH + (int)pos.x], MASK_COLOR_FILLED)) {
       output_commands.push_back(make_explosion_command(pos));
       is_dead = true;
       return;

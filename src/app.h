@@ -15,28 +15,30 @@ struct App {
   std::vector<Wrm> wrms{};
   int active_worm = -1;
   std::vector<Bullet> bullets{};
+  Image foreground_image;
+  Texture2D background_texture;
 
   App() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Wrms");
     SetTargetFPS(120);
 
     render_texture = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
-    Image background_image = LoadImage("./data/background_1.png");
-    Color *background_colors = LoadImageColors(background_image);
+    background_texture = LoadTexture("./data/background_1.png");
+    foreground_image = LoadImage("./data/foreground_1.png");
+    Color *foreground_colors = LoadImageColors(foreground_image);
 
     BeginTextureMode(render_texture);
-    ClearBackground(TRANSPARENT_COLOR);
+    ClearBackground(MASK_COLOR_EMPTY);
     for (int y = 0; y < SCREEN_HEIGHT; y++) {
       for (int x = 0; x < SCREEN_WIDTH; x++) {
-        if (background_colors[y * SCREEN_WIDTH + x].a > 0) {
-          DrawPixel(x, SCREEN_HEIGHT - y - 1, background_colors[y * SCREEN_WIDTH + x]);
+        if (foreground_colors[y * SCREEN_WIDTH + x].a > 0) {
+          DrawPixel(x, SCREEN_HEIGHT - y - 1, MASK_COLOR_FILLED);
         }
       }
     }
     EndTextureMode();
 
-    UnloadImageColors(background_colors);
-    UnloadImage(background_image);
+    UnloadImageColors(foreground_colors);
 
     wrms.emplace_back(Vector2{100.0f, 100.0f}, Vector2{60.0f, 40.0f});
     active_worm = 0;
@@ -44,6 +46,7 @@ struct App {
 
   ~App() {
     UnloadRenderTexture(render_texture);
+    UnloadImage(foreground_image);
     CloseWindow();
   }
 
@@ -60,12 +63,18 @@ struct App {
       ClearBackground(RAYWHITE);
 
       DrawTexture(render_texture.texture, 0, 0, WHITE);
+      DrawTexture(background_texture, 0, 0, WHITE);
+
+      Texture2D foreground_texture = LoadTextureFromImage(foreground_image);
+      DrawTexture(foreground_texture, 0, 0, WHITE);
 
       draw();
 
       DrawFPS(0, 0);
 
       EndDrawing();
+
+      UnloadTexture(foreground_texture);
     }
   }
 
@@ -85,7 +94,7 @@ struct App {
     if (IsMouseButtonPressed(0)) {
       Vector2 mouse_coord = GetMousePosition();
       BeginTextureMode(render_texture);
-      DrawCircle(mouse_coord.x, SCREEN_HEIGHT - mouse_coord.y, 100.0f, TRANSPARENT_COLOR);
+      DrawCircle(mouse_coord.x, SCREEN_HEIGHT - mouse_coord.y, 100.0f, MASK_COLOR_EMPTY);
       EndTextureMode();
     }
 
@@ -94,8 +103,13 @@ struct App {
         bullets.emplace_back(command.fire);
       } else if (command.kind == CommandKind::EXPLOSION) {
         BeginTextureMode(render_texture);
-        DrawCircle(command.explosion.pos.x, SCREEN_HEIGHT - command.explosion.pos.y, 60.0f, TRANSPARENT_COLOR);
+        DrawCircle(command.explosion.pos.x, SCREEN_HEIGHT - command.explosion.pos.y, 60.0f, YELLOW);
         EndTextureMode();
+
+        ImageDrawCircle(&foreground_image, command.explosion.pos.x, command.explosion.pos.y, 60.0f,
+                        FAKE_TRANSPARENT_COLOR);
+        ImageColorReplace(&foreground_image, FAKE_TRANSPARENT_COLOR, TRANSPARENT_COLOR);
+
       } else {
         TraceLog(LOG_ERROR, "Invalid command");
       }

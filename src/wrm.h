@@ -129,15 +129,15 @@ struct Wrm {
   int next_floor_y(Color *colors, int for_x, int for_y) {
     int y = for_y;
 
-    if (!ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], TRANSPARENT_COLOR)) {
+    if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], MASK_COLOR_FILLED)) {
       for (; y >= 0; y--) {
-        if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], TRANSPARENT_COLOR)) {
+        if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], MASK_COLOR_EMPTY)) {
           break;
         }
       }
     } else {
       for (; y < SCREEN_HEIGHT; y++) {
-        if (!ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], TRANSPARENT_COLOR)) {
+        if (ColorIsEqual(colors[y * SCREEN_WIDTH + for_x], MASK_COLOR_FILLED)) {
           y--;
           break;
         }
