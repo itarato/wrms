@@ -29,7 +29,8 @@ struct App {
     background_texture = LoadTexture("./data/background_1.png");
     foreground_image = LoadImage("./data/foreground_1.png");
 
-    wrms.emplace_back(Vector2{100.0f, 100.0f});
+    wrms.emplace_back(Vector2{100.0f, 100.0f}, true);
+    wrms.emplace_back(Vector2{(float)SCREEN_WIDTH - 100.0f, 100.0f}, false);
     active_worm = 0;
   }
 
@@ -85,8 +86,9 @@ struct App {
     rumbles.erase(std::remove_if(rumbles.begin(), rumbles.end(), [](const auto &smoke) { return smoke.is_dead(); }),
                   rumbles.end());
 
-    if (active_worm >= 0) {
-      wrms[active_worm].update(output_commands, colors);
+    for (int i = 0; i < wrms.size(); i++) {
+      bool has_control = i == active_worm;
+      wrms[i].update(output_commands, colors, has_control);
     }
 
     for (Command command : output_commands) {
@@ -100,6 +102,8 @@ struct App {
         for (int i = 0; i < APP_RUMBLE_COUNT; i++) {
           rumbles.push_back(make_rumble(command.explosion.pos, APP_EXPLOSION_ZONE));
         }
+
+        active_worm = (active_worm + 1) % wrms.size();
       } else if (command.kind == CommandKind::SMOKE) {
         smokes.push_back(Smoke{command.smoke_pos});
       } else {

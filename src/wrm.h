@@ -26,7 +26,7 @@ struct Wrm {
   Texture2D texture_right;
   Texture2D texture_aim;
 
-  Wrm(Vector2 pos) : pos(pos) {
+  Wrm(Vector2 pos, bool is_dir_right) : pos(pos), is_dir_right(is_dir_right) {
     texture_left = LoadTexture("./data/ghost_left.png");
     texture_right = LoadTexture("./data/ghost_right.png");
     texture_aim = LoadTexture("./data/aim.png");
@@ -91,14 +91,14 @@ struct Wrm {
     }
   }
 
-  void update(std::vector<Command> &output_commands, Color *colors) {
-    update_movement(colors);
-    update_aim();
-    update_shoot(output_commands);
+  void update(std::vector<Command> &output_commands, Color *colors, bool has_control) {
+    update_movement(colors, has_control);
+    update_aim(has_control);
+    update_shoot(output_commands, has_control);
   }
 
-  void update_shoot(std::vector<Command> &output_commands) {
-    if (IsKeyDown(KEY_SPACE)) {
+  void update_shoot(std::vector<Command> &output_commands, bool has_control) {
+    if (has_control && IsKeyDown(KEY_SPACE)) {
       shoot_force += WRM_SHOOT_FORCE_INCREMENT;
       if (shoot_force > WRM_SHOOT_MAX_FORCE) shoot_force = WRM_SHOOT_MAX_FORCE;
     } else if (shoot_force > 0.0f) {
@@ -107,24 +107,24 @@ struct Wrm {
     }
   }
 
-  void update_aim() {
-    if (IsKeyDown(KEY_UP)) {
+  void update_aim(bool has_control) {
+    if (has_control && IsKeyDown(KEY_UP)) {
       __aim_angle += WRM_AIM_SPEED;
 
       if (__aim_angle > 180.0f) __aim_angle = 180.0f;
     }
-    if (IsKeyDown(KEY_DOWN)) {
+    if (has_control && IsKeyDown(KEY_DOWN)) {
       __aim_angle -= WRM_AIM_SPEED;
       if (__aim_angle < 0.0f) __aim_angle = 0.0f;
     }
   }
 
-  void update_movement(Color *colors) {
-    update_vertical_movement(colors);
-    update_horizontal_movement(colors);
+  void update_movement(Color *colors, bool has_control) {
+    update_vertical_movement(colors, has_control);
+    update_horizontal_movement(colors, has_control);
   }
 
-  void update_vertical_movement(Color *colors) {
+  void update_vertical_movement(Color *colors, bool has_control) {
     g.update();
 
     int floor_y = next_floor_y(colors, pos.x, pos.y);
@@ -132,7 +132,7 @@ struct Wrm {
     int floor_y_diff = floor_y - pos.y;
     bool is_on_the_ground = fabs(floor_y_diff) < WRM_ON_THE_GROUND_THRESHOLD;
 
-    if (IsKeyPressed(KEY_ENTER) && is_on_the_ground) {
+    if (has_control && IsKeyPressed(KEY_ENTER) && is_on_the_ground) {
       g.value = WRM_JUMP_FORCE;
     }
 
@@ -170,16 +170,16 @@ struct Wrm {
     }
   }
 
-  void update_horizontal_movement(Color *colors) {
+  void update_horizontal_movement(Color *colors, bool has_control) {
     float new_pos_x{pos.x};
     bool has_moved{false};
 
-    if (IsKeyDown(KEY_LEFT)) {
+    if (has_control && IsKeyDown(KEY_LEFT)) {
       new_pos_x = pos.x - WRM_HSPEED;
       is_dir_right = false;
       has_moved = true;
     }
-    if (IsKeyDown(KEY_RIGHT)) {
+    if (has_control && IsKeyDown(KEY_RIGHT)) {
       new_pos_x = pos.x + WRM_HSPEED;
       is_dir_right = true;
       has_moved = true;
