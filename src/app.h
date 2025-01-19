@@ -10,11 +10,15 @@
 #include "common.h"
 #include "wrm.h"
 
+#define APP_RUMBLE_COUNT 60
+#define APP_EXPLOSION_ZONE 60.0f
+
 struct App {
   std::vector<Wrm> wrms{};
   int active_worm = -1;
   std::vector<Bullet> bullets{};
   std::vector<Smoke> smokes{};
+  std::vector<Rumble> rumbles{};
   Image foreground_image;
   Texture2D background_texture;
 
@@ -75,6 +79,12 @@ struct App {
     smokes.erase(std::remove_if(smokes.begin(), smokes.end(), [](const auto &smoke) { return smoke.is_dead(); }),
                  smokes.end());
 
+    for (auto &rumble : rumbles) {
+      rumble.update();
+    }
+    rumbles.erase(std::remove_if(rumbles.begin(), rumbles.end(), [](const auto &smoke) { return smoke.is_dead(); }),
+                  rumbles.end());
+
     if (active_worm >= 0) {
       wrms[active_worm].update(output_commands, colors);
     }
@@ -83,9 +93,13 @@ struct App {
       if (command.kind == CommandKind::FIRE) {
         bullets.emplace_back(command.fire);
       } else if (command.kind == CommandKind::EXPLOSION) {
-        ImageDrawCircle(&foreground_image, command.explosion.pos.x, command.explosion.pos.y, 60.0f,
+        ImageDrawCircle(&foreground_image, command.explosion.pos.x, command.explosion.pos.y, APP_EXPLOSION_ZONE,
                         FAKE_TRANSPARENT_COLOR);
         ImageColorReplace(&foreground_image, FAKE_TRANSPARENT_COLOR, TRANSPARENT_COLOR);
+
+        for (int i = 0; i < APP_RUMBLE_COUNT; i++) {
+          rumbles.push_back(make_rumble(command.explosion.pos, APP_EXPLOSION_ZONE));
+        }
       } else if (command.kind == CommandKind::SMOKE) {
         smokes.push_back(Smoke{command.smoke_pos});
       } else {
@@ -105,6 +119,10 @@ struct App {
 
     for (auto &smoke : smokes) {
       smoke.draw();
+    }
+
+    for (auto &rumble : rumbles) {
+      rumble.draw();
     }
   }
 };

@@ -2,6 +2,8 @@
 
 #include <raylib.h>
 
+#include <cstdlib>
+
 #define SCREEN_WIDTH 1920
 #define SCREEN_HEIGHT 1080
 
@@ -34,7 +36,7 @@ float min_bound_value(float value, float min_bound) {
   }
 }
 
-bool out_of_screen(Vector2 &pos) {
+bool out_of_screen(Vector2 const &pos) {
   return pos.x < 0 || pos.y < 0 || pos.x >= SCREEN_WIDTH || pos.y >= SCREEN_HEIGHT;
 }
 
@@ -118,3 +120,49 @@ struct Smoke {
     return timer <= 0;
   }
 };
+
+struct Rumble {
+  Vector2 pos;
+  float vx;
+  Gravity g;
+  float rot;
+  float rot_v;
+  int timer;
+  float size;
+
+  void update() {
+    g.update();
+
+    pos.x += vx;
+    pos.y += g.value;
+
+    rot += rot_v;
+
+    timer--;
+  }
+
+  void draw() const {
+    DrawRectanglePro({pos.x, pos.y, size, size}, {size / 2.0f, size / 2.0f}, rot, GRAY);
+  }
+
+  bool is_dead() const {
+    return timer <= 0;
+  }
+};
+
+float randf(float max) {
+  return (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * max;
+}
+
+Rumble make_rumble(Vector2 pos, float zone) {
+  float zone_half = zone / 2.0f;
+  return Rumble{
+      .pos = Vector2{pos.x + randf(zone_half) - zone_half, pos.y + randf(zone_half) - zone_half},
+      .vx = randf(10.0f) - 5.0f,
+      .g = Gravity{randf(10.0f) - 12.0f},
+      .rot = 0.0f,
+      .rot_v = randf(30.0f) - 15.0f,
+      .timer = std::rand() % 100,
+      .size = randf(10.0f) + 5.0f,
+  };
+}

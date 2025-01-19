@@ -5,7 +5,7 @@
 
 #include "common.h"
 
-#define WRM_HSPEED 1
+#define WRM_HSPEED 0.4f
 #define WRM_MOVE_LIFT_THRESHOLD -10
 #define WRM_AIM_CROSS_DIST 100
 #define WRM_AIM_SPEED 1
