@@ -60,28 +60,6 @@ struct Gravity {
   }
 };
 
-struct Thrust {
-  Vector2 pos;
-  float angle;
-  float force;
-
-  Thrust(Vector2 pos, float angle, float force) : pos(pos), angle(angle), force(force) {
-  }
-
-  void update() {
-    if (between(angle, 0.0f, 180.0f)) {
-      angle -= sinf(DEG2RAD * angle) * 1.0f;
-      angle = bound_value(angle, 0.0f, 180.0f);
-
-      force = min_bound_value(force + sinf(DEG2RAD * (angle + 90.0f)) * 0.2f, 0.0f);
-    } else {
-    }
-
-    pos.x += sinf(DEG2RAD * angle) * force;
-    pos.y += cosf(DEG2RAD * angle) * force;
-  }
-};
-
 enum class CommandKind {
   FIRE,
   EXPLOSION,

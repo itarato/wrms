@@ -173,7 +173,7 @@ struct Wrm {
   }
 
   void update_horizontal_movement(Color *colors) {
-    int new_pos_x{pos.x};
+    float new_pos_x{pos.x};
     bool has_moved{false};
 
     if (IsKeyDown(KEY_LEFT)) {
