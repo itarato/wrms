@@ -12,6 +12,32 @@
 const Color FAKE_TRANSPARENT_COLOR = MAGENTA;
 const Color TRANSPARENT_COLOR = Color{0x0, 0x0, 0x0, 0x00};
 
+bool between(float value, float lhs, float rhs) {
+  return value >= lhs && value <= rhs;
+}
+
+int bound_value(int value, int min_bound, int max_bound) {
+  if (value < min_bound) {
+    return min_bound;
+  } else if (value > max_bound) {
+    return max_bound;
+  } else {
+    return value;
+  }
+}
+
+float min_bound_value(float value, float min_bound) {
+  if (value < min_bound) {
+    return min_bound;
+  } else {
+    return value;
+  }
+}
+
+bool out_of_screen(Vector2 &pos) {
+  return pos.x < 0 || pos.y < 0 || pos.x >= SCREEN_WIDTH || pos.y >= SCREEN_HEIGHT;
+}
+
 struct Gravity {
   float value{0.0f};
 
@@ -31,6 +57,28 @@ struct Gravity {
 
   bool rise() const {
     return value < 0.0f;
+  }
+};
+
+struct Thrust {
+  Vector2 pos;
+  float angle;
+  float force;
+
+  Thrust(Vector2 pos, float angle, float force) : pos(pos), angle(angle), force(force) {
+  }
+
+  void update() {
+    if (between(angle, 0.0f, 180.0f)) {
+      angle -= sinf(DEG2RAD * angle) * 1.0f;
+      angle = bound_value(angle, 0.0f, 180.0f);
+
+      force = min_bound_value(force + sinf(DEG2RAD * (angle + 90.0f)) * 0.2f, 0.0f);
+    } else {
+    }
+
+    pos.x += sinf(DEG2RAD * angle) * force;
+    pos.y += cosf(DEG2RAD * angle) * force;
   }
 };
 
@@ -67,14 +115,4 @@ Command make_explosion_command(Vector2 pos) {
 
 bool color_is_transparent(const Color &color) {
   return color.a == 0;
-}
-
-int bound_value(int value, int min_bound, int max_bound) {
-  if (value < min_bound) {
-    return min_bound;
-  } else if (value > max_bound) {
-    return max_bound;
-  } else {
-    return value;
-  }
 }

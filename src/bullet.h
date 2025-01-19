@@ -5,41 +5,26 @@
 #include "common.h"
 
 struct Bullet {
-  Vector2 pos;
-  Vector2 v;
+  Thrust thrust;
   bool is_dead{false};
 
-  Bullet(Vector2 pos, Vector2 v) : pos(pos), v(v) {
-  }
-
-  Bullet(CommandFire &command) {
-    pos = command.pos;
-    v = Vector2{sinf(command.angle * DEG2RAD) * command.force, cosf(command.angle * DEG2RAD) * command.force};
+  Bullet(CommandFire &command) : thrust(command.pos, command.angle, command.force) {
   }
 
   void draw() const {
-    DrawCircleV(pos, 10.0f, ORANGE);
+    DrawCircleV(thrust.pos, 10.0f, ORANGE);
   }
 
   void update(std::vector<Command> &output_commands, Color *colors) {
-    if (fabs(v.y) < GRAVITY_FALL_THRESHOLD) {
-      v.y = GRAVITY_FALL_THRESHOLD;
-    } else if (v.y < 0.0f) {
-      v.y *= GRAVITY_DEC;
-    } else {
-      v.y *= GRAVITY_INC;
-    }
+    thrust.update();
 
-    pos.x += v.x;
-    pos.y += v.y;
-
-    if (pos.x < 0 || pos.y < 0 || pos.x >= SCREEN_WIDTH || pos.y >= SCREEN_HEIGHT) {
+    if (out_of_screen(thrust.pos)) {
       is_dead = true;
       return;
     }
 
-    if (!color_is_transparent(colors[(int)pos.y * SCREEN_WIDTH + (int)pos.x])) {
-      output_commands.push_back(make_explosion_command(pos));
+    if (!color_is_transparent(colors[(int)thrust.pos.y * SCREEN_WIDTH + (int)thrust.pos.x])) {
+      output_commands.push_back(make_explosion_command(thrust.pos));
       is_dead = true;
       return;
     }

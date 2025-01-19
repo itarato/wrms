@@ -77,6 +77,8 @@ struct Wrm {
 
                    },
                    -get_aim_angle(), WHITE);
+
+    DrawText(TextFormat("ANGLE = %d", (int)get_aim_angle()), 10, 100, 20, BLACK);
   }
 
   Vector2 get_fire_center() const {
