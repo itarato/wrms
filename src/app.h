@@ -14,6 +14,7 @@ struct App {
   std::vector<Wrm> wrms{};
   int active_worm = -1;
   std::vector<Bullet> bullets{};
+  std::vector<Smoke> smokes{};
   Image foreground_image;
   Texture2D background_texture;
 
@@ -68,6 +69,12 @@ struct App {
     bullets.erase(std::remove_if(bullets.begin(), bullets.end(), [](const auto &bullet) { return bullet.is_dead; }),
                   bullets.end());
 
+    for (auto &smoke : smokes) {
+      smoke.update();
+    }
+    smokes.erase(std::remove_if(smokes.begin(), smokes.end(), [](const auto &smoke) { return smoke.is_dead(); }),
+                 smokes.end());
+
     if (active_worm >= 0) {
       wrms[active_worm].update(output_commands, colors);
     }
@@ -79,7 +86,8 @@ struct App {
         ImageDrawCircle(&foreground_image, command.explosion.pos.x, command.explosion.pos.y, 60.0f,
                         FAKE_TRANSPARENT_COLOR);
         ImageColorReplace(&foreground_image, FAKE_TRANSPARENT_COLOR, TRANSPARENT_COLOR);
-
+      } else if (command.kind == CommandKind::SMOKE) {
+        smokes.push_back(Smoke{command.smoke_pos});
       } else {
         TraceLog(LOG_ERROR, "Invalid command");
       }
@@ -87,12 +95,16 @@ struct App {
   }
 
   void draw() const {
-    for (auto wrm : wrms) {
+    for (auto &wrm : wrms) {
       wrm.draw();
     }
 
-    for (auto bullet : bullets) {
+    for (auto &bullet : bullets) {
       bullet.draw();
+    }
+
+    for (auto &smoke : smokes) {
+      smoke.draw();
     }
   }
 };

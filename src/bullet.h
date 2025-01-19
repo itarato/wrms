@@ -36,5 +36,7 @@ struct Bullet {
       is_dead = true;
       return;
     }
+
+    output_commands.push_back(make_smoke_command(pos));
   }
 };
