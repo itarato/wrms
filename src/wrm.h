@@ -13,7 +13,7 @@
 #define WRM_SHOOT_FORCE_INCREMENT 0.1f
 #define WRM_JUMP_FORCE -5.0f
 // How close it has to be to the platform to be considered on the ground;
-#define WRM_ON_THE_GROUND_THRESHOLD 2.0f
+#define WRM_ON_THE_GROUND_THRESHOLD 10.0f
 
 struct Wrm {
   Vector2 pos;
@@ -120,19 +120,14 @@ struct Wrm {
   }
 
   void update_movement(Color *colors) {
+    update_vertical_movement(colors);
+    update_horizontal_movement(colors);
+  }
+
+  void update_vertical_movement(Color *colors) {
     g.update();
 
-    int old_pos_x = pos.x;
-    if (IsKeyDown(KEY_LEFT)) {
-      pos.x -= WRM_HSPEED;
-      is_dir_right = false;
-    }
-    if (IsKeyDown(KEY_RIGHT)) {
-      pos.x += WRM_HSPEED;
-      is_dir_right = true;
-    }
-
-    int floor_y = next_floor_y(colors);
+    int floor_y = next_floor_y(colors, pos.x, pos.y);
     // TraceLog(LOG_WARNING, "Current Y: %f Next Y: %d", pos.y, floor_y);
     int floor_y_diff = floor_y - pos.y;
     bool is_on_the_ground = fabs(floor_y_diff) < WRM_ON_THE_GROUND_THRESHOLD;
@@ -141,66 +136,102 @@ struct Wrm {
       g.value = WRM_JUMP_FORCE;
     }
 
-    if (g.rise()) {
+    if (g.rise()) {  // Rising.
       int ceiling_y = next_ceiling_y(colors);
-      if (ceiling_y < pos.y) {
+
+      if (ceiling_y < pos.y) {  // Can rise.
         int rise_y = pos.y + g.value;
-        if (rise_y < ceiling_y) {
+        if (rise_y < ceiling_y) {  // Can rise partial amount only.
           pos.y = ceiling_y;
           g.reset();
         } else {
           pos.y = rise_y;
         }
-      }
-    } else {
-      if (floor_y_diff < WRM_MOVE_LIFT_THRESHOLD) {
-        // Got inside a wall - cannot move there - restore movement.
-        pos.x = old_pos_x;
+      } else {  // Cannot rise.
         g.reset();
-      } else if (floor_y_diff <= 0.0f) {
-        // Lifting slightly up.
+      }
+    } else {                                         // Falling.
+      if (floor_y_diff < WRM_MOVE_LIFT_THRESHOLD) {  // Got inside a wall - cannot move there.
+        // This situation is awkward - we cannot triviall fix the position.
+        // We need to avoid at all cost to move the wrm into the wall.
+        g.reset();
+      } else if (floor_y_diff <= 0.0f) {  // Lifting slightly up.
         pos.y = floor_y;
         g.reset();
-      } else {
+      } else {  // Falling.
         int fallen_y = pos.y + g.value;
-        if (fallen_y > floor_y) {
+        if (fallen_y > floor_y) {  // Reached floor.
           pos.y = floor_y;
           g.reset();
-        } else {
+        } else {  // Free falling.
           pos.y = fallen_y;
         }
       }
     }
   }
 
+  void update_horizontal_movement(Color *colors) {
+    int new_pos_x{pos.x};
+    bool has_moved{false};
+
+    if (IsKeyDown(KEY_LEFT)) {
+      new_pos_x = pos.x - WRM_HSPEED;
+      is_dir_right = false;
+      has_moved = true;
+    }
+    if (IsKeyDown(KEY_RIGHT)) {
+      new_pos_x = pos.x + WRM_HSPEED;
+      is_dir_right = true;
+      has_moved = true;
+    }
+
+    if (has_moved) {
+      if (color_is_transparent(colors[(int)pos.y * SCREEN_WIDTH + (int)new_pos_x])) {
+        pos.x = new_pos_x;
+      } else {
+        int floor_y = next_floor_up_y(colors, new_pos_x, pos.y);
+        int diff = floor_y - pos.y;
+        if (diff >= WRM_MOVE_LIFT_THRESHOLD) {
+          pos.x = new_pos_x;
+          pos.y = floor_y;
+        }
+      }
+    }
+  }
+
  private:
-  int next_floor_y(Color *colors) {
-    int y = pos.y;
+  int next_floor_y(Color *colors, int for_x, int for_y) {
+    int y = for_y;
     // Color c = colors[for_y * SCREEN_WIDTH + for_x];
     // TraceLog(LOG_WARNING, "Color at x=%d y=%d -> R=%d G=%d B=%d A=%d", for_x, for_y, c.r, c.g, c.b, c.a);
 
-    if (color_is_transparent(colors[y * SCREEN_WIDTH + (int)pos.x])) {
+    if (color_is_transparent(colors[y * SCREEN_WIDTH + for_x])) {
       for (; y < SCREEN_HEIGHT; y++) {
-        if (!color_is_transparent(colors[y * SCREEN_WIDTH + (int)pos.x])) {
+        if (!color_is_transparent(colors[y * SCREEN_WIDTH + for_x])) {
           y--;
           break;
         }
       }
     } else {
       for (; y > 0; y--) {
-        if (color_is_transparent(colors[y * SCREEN_WIDTH + (int)pos.x])) {
+        if (color_is_transparent(colors[y * SCREEN_WIDTH + for_x])) {
           break;
         }
       }
     }
 
-    if (y < 0) {
-      return 0;
-    } else if (y >= SCREEN_HEIGHT) {
-      return SCREEN_HEIGHT - 1;
-    } else {
-      return y;
+    return bound_value(y, 0, SCREEN_HEIGHT - 1);
+  }
+
+  int next_floor_up_y(Color *colors, int for_x, int for_y) {
+    int y = for_y;
+    for (; y > 0; y--) {
+      if (color_is_transparent(colors[y * SCREEN_WIDTH + for_x])) {
+        break;
+      }
     }
+
+    return bound_value(y, 0, SCREEN_HEIGHT - 1);
   }
 
   int next_ceiling_y(Color *colors) {

@@ -68,3 +68,13 @@ Command make_explosion_command(Vector2 pos) {
 bool color_is_transparent(const Color &color) {
   return color.a == 0;
 }
+
+int bound_value(int value, int min_bound, int max_bound) {
+  if (value < min_bound) {
+    return min_bound;
+  } else if (value > max_bound) {
+    return max_bound;
+  } else {
+    return value;
+  }
+}
