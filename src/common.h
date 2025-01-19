@@ -12,6 +12,28 @@
 const Color FAKE_TRANSPARENT_COLOR = MAGENTA;
 const Color TRANSPARENT_COLOR = Color{0x0, 0x0, 0x0, 0x00};
 
+struct Gravity {
+  float value{0.0f};
+
+  void update() {
+    if (fabs(value) < GRAVITY_FALL_THRESHOLD) {
+      value = GRAVITY_FALL_THRESHOLD;
+    } else if (value < 0.0f) {
+      value *= GRAVITY_DEC;
+    } else {
+      value *= GRAVITY_INC;
+    }
+  }
+
+  void reset() {
+    value = 0.0f;
+  }
+
+  bool rise() const {
+    return value < 0.0f;
+  }
+};
+
 enum class CommandKind {
   FIRE,
   EXPLOSION,
