@@ -75,6 +75,8 @@ struct CommandFire {
 
 struct CommandExplosion {
   Vector2 pos;
+  float radius;  // How far does the damage reach.
+  float power;   // How much does 100% hurt.
 };
 
 struct Command {
@@ -86,12 +88,16 @@ struct Command {
   CommandKind kind;
 };
 
+struct Hittable {
+  virtual bool is_hit(Vector2 &point) const;
+};
+
 Command make_fire_command(Vector2 pos, float angle, float force) {
   return Command{.fire = {pos, angle, force}, .kind = CommandKind::FIRE};
 }
 
-Command make_explosion_command(Vector2 pos) {
-  return Command{.explosion = {pos}, .kind = CommandKind::EXPLOSION};
+Command make_explosion_command(Vector2 pos, float range, float power) {
+  return Command{.explosion = {pos, range, power}, .kind = CommandKind::EXPLOSION};
 }
 
 Command make_smoke_command(Vector2 pos) {

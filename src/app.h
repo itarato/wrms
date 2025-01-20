@@ -11,7 +11,6 @@
 #include "wrm.h"
 
 #define APP_RUMBLE_COUNT 60
-#define APP_EXPLOSION_ZONE 60.0f
 
 struct App {
   std::vector<Wrm> wrms{};
@@ -95,15 +94,24 @@ struct App {
       if (command.kind == CommandKind::FIRE) {
         bullets.emplace_back(command.fire);
       } else if (command.kind == CommandKind::EXPLOSION) {
-        ImageDrawCircle(&foreground_image, command.explosion.pos.x, command.explosion.pos.y, APP_EXPLOSION_ZONE,
+        ImageDrawCircle(&foreground_image, command.explosion.pos.x, command.explosion.pos.y, command.explosion.radius,
                         FAKE_TRANSPARENT_COLOR);
         ImageColorReplace(&foreground_image, FAKE_TRANSPARENT_COLOR, TRANSPARENT_COLOR);
 
         for (int i = 0; i < APP_RUMBLE_COUNT; i++) {
-          rumbles.push_back(make_rumble(command.explosion.pos, APP_EXPLOSION_ZONE));
+          rumbles.push_back(make_rumble(command.explosion.pos, command.explosion.radius));
         }
 
         active_worm = (active_worm + 1) % wrms.size();
+
+        for (auto &wrm : wrms) {
+          float explosion_distance = Vector2Distance(wrm.pos, command.explosion.pos);
+          if (explosion_distance < command.explosion.radius) {
+            float damage_percentage = (command.explosion.radius - explosion_distance) / command.explosion.radius;
+            float damage = command.explosion.power * damage_percentage;
+            wrm.life -= damage;
+          }
+        }
       } else if (command.kind == CommandKind::SMOKE) {
         smokes.push_back(Smoke{command.smoke_pos});
       } else if (command.kind == CommandKind::BULLET_MISSED) {

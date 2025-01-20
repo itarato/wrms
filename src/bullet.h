@@ -4,6 +4,9 @@
 
 #include "common.h"
 
+#define BULLET_EXPLOSION_ZONE_RADIUS 60.0f
+#define BULLET_EXPLOSION_POWER 50.0f
+
 struct Bullet {
   float vx;
   Vector2 pos;
@@ -33,7 +36,7 @@ struct Bullet {
     }
 
     if (!color_is_transparent(colors[(int)pos.y * SCREEN_WIDTH + (int)pos.x])) {
-      output_commands.push_back(make_explosion_command(pos));
+      output_commands.push_back(make_explosion_command(pos, BULLET_EXPLOSION_ZONE_RADIUS, BULLET_EXPLOSION_POWER));
       is_dead = true;
       return;
     }
