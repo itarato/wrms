@@ -89,7 +89,7 @@ struct Command {
 };
 
 struct Hittable {
-  virtual bool is_hit(Vector2 &point) const;
+  virtual bool is_hit(Vector2 &point) const = 0;
 };
 
 Command make_fire_command(Vector2 pos, float angle, float force) {

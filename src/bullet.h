@@ -23,7 +23,7 @@ struct Bullet {
     DrawCircleV(pos, 10.0f, ORANGE);
   }
 
-  void update(std::vector<Command> &output_commands, Color *colors) {
+  void update(std::vector<Command> &output_commands, Color *colors, std::vector<Hittable *> hittables) {
     g.update();
 
     pos.x += vx;
@@ -33,6 +33,14 @@ struct Bullet {
       output_commands.push_back(make_bullet_missed_command());
       is_dead = true;
       return;
+    }
+
+    for (auto hittable : hittables) {
+      if (hittable->is_hit(pos)) {
+        output_commands.push_back(make_explosion_command(pos, BULLET_EXPLOSION_ZONE_RADIUS, BULLET_EXPLOSION_POWER));
+        is_dead = true;
+        return;
+      }
     }
 
     if (!color_is_transparent(colors[(int)pos.y * SCREEN_WIDTH + (int)pos.x])) {

@@ -67,8 +67,13 @@ struct App {
   void update(Color *colors) {
     std::vector<Command> output_commands{};
 
+    std::vector<Hittable *> hittables{};
+    for (auto &wrm : wrms) {
+      hittables.push_back(&wrm);
+    }
+
     for (auto &bullet : bullets) {
-      bullet.update(output_commands, colors);
+      bullet.update(output_commands, colors, hittables);
     }
     bullets.erase(std::remove_if(bullets.begin(), bullets.end(), [](const auto &bullet) { return bullet.is_dead; }),
                   bullets.end());
@@ -85,7 +90,7 @@ struct App {
     rumbles.erase(std::remove_if(rumbles.begin(), rumbles.end(), [](const auto &smoke) { return smoke.is_dead(); }),
                   rumbles.end());
 
-    for (int i = 0; i < wrms.size(); i++) {
+    for (int i = 0; i < (int)wrms.size(); i++) {
       bool has_control = i == active_worm;
       wrms[i].update(output_commands, colors, has_control);
     }

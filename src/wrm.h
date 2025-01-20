@@ -15,7 +15,7 @@
 // How close it has to be to the platform to be considered on the ground;
 #define WRM_ON_THE_GROUND_THRESHOLD 10.0f
 
-struct Wrm {
+struct Wrm : Hittable {
   Vector2 pos;
   Vector2 frame;
   Gravity g{};
@@ -204,6 +204,14 @@ struct Wrm {
         }
       }
     }
+  }
+
+  Rectangle get_frame_rec() const {
+    return Rectangle{pos.x, pos.y, frame.x, frame.y};
+  }
+
+  bool is_hit(Vector2 &point) const {
+    return CheckCollisionPointRec(point, get_frame_rec());
   }
 
  private:
