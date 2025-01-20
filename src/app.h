@@ -28,8 +28,8 @@ struct App {
     background_texture = LoadTexture("./data/background_1.png");
     foreground_image = LoadImage("./data/foreground_1.png");
 
-    wrms.emplace_back(Vector2{100.0f, 100.0f}, true);
-    wrms.emplace_back(Vector2{(float)SCREEN_WIDTH - 100.0f, 100.0f}, false);
+    wrms.emplace_back(Vector2{100.0f, 100.0f}, true, Color{0xff, 0xcc, 0xcc, 0xff});
+    wrms.emplace_back(Vector2{(float)SCREEN_WIDTH - 100.0f, 100.0f}, false, Color{0xcc, 0xcc, 0xff, 0xff});
     active_worm = 0;
   }
 
@@ -111,11 +111,14 @@ struct App {
 
         for (auto &wrm : wrms) {
           float explosion_distance = Vector2Distance(wrm.pos, command.explosion.pos);
-          if (explosion_distance < command.explosion.radius) {
+          float damage{0.0f};
+          if (wrm.is_hit(command.explosion.pos)) {
+            damage = command.explosion.power;
+          } else if (explosion_distance < command.explosion.radius) {
             float damage_percentage = (command.explosion.radius - explosion_distance) / command.explosion.radius;
-            float damage = command.explosion.power * damage_percentage;
-            wrm.life -= damage;
+            damage = command.explosion.power * damage_percentage;
           }
+          wrm.life -= damage;
         }
       } else if (command.kind == CommandKind::SMOKE) {
         smokes.push_back(Smoke{command.smoke_pos});

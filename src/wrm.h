@@ -26,8 +26,9 @@ struct Wrm : Hittable {
   Texture2D texture_right;
   Texture2D texture_aim;
   int life{100};
+  Color tint;
 
-  Wrm(Vector2 pos, bool is_dir_right) : pos(pos), is_dir_right(is_dir_right) {
+  Wrm(Vector2 pos, bool is_dir_right, Color tint) : pos(pos), is_dir_right(is_dir_right), tint(tint) {
     texture_left = LoadTexture("./data/ghost_left.png");
     texture_right = LoadTexture("./data/ghost_right.png");
     texture_aim = LoadTexture("./data/aim.png");
@@ -49,9 +50,9 @@ struct Wrm : Hittable {
 
     Vector2 texture_draw_pos = Vector2Subtract(pos, {frame.x / 2, frame.y});
     if (is_dir_right) {
-      DrawTextureV(texture_right, texture_draw_pos, WHITE);
+      DrawTextureV(texture_right, texture_draw_pos, tint);
     } else {
-      DrawTextureV(texture_left, texture_draw_pos, WHITE);
+      DrawTextureV(texture_left, texture_draw_pos, tint);
     }
 
     Vector2 aim_pos{
