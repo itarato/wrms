@@ -25,6 +25,7 @@ struct Wrm {
   Texture2D texture_left;
   Texture2D texture_right;
   Texture2D texture_aim;
+  int life{100};
 
   Wrm(Vector2 pos, bool is_dir_right) : pos(pos), is_dir_right(is_dir_right) {
     texture_left = LoadTexture("./data/ghost_left.png");
@@ -77,6 +78,12 @@ struct Wrm {
 
                    },
                    -get_aim_angle(), WHITE);
+
+    // Draw life.
+    Rectangle life_rec{pos.x - 15.0f, pos.y - frame.y - 30.0f, 30.0f, 18.0f};
+    DrawRectangleRec(life_rec, BLACK);
+    DrawRectangleLinesEx(life_rec, 2, ORANGE);
+    DrawText(TextFormat("%03d", life), pos.x - 8.0f, pos.y - frame.y - 25.0f, 10, ORANGE);
   }
 
   Vector2 get_fire_center() const {

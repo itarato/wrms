@@ -27,6 +27,7 @@ struct Bullet {
     pos.y += g.value;
 
     if (out_of_screen(pos)) {
+      output_commands.push_back(make_bullet_missed_command());
       is_dead = true;
       return;
     }

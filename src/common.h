@@ -64,6 +64,7 @@ enum class CommandKind {
   FIRE,
   EXPLOSION,
   SMOKE,
+  BULLET_MISSED,
 };
 
 struct CommandFire {
@@ -95,6 +96,10 @@ Command make_explosion_command(Vector2 pos) {
 
 Command make_smoke_command(Vector2 pos) {
   return Command{.smoke_pos = pos, .kind = CommandKind::SMOKE};
+}
+
+Command make_bullet_missed_command() {
+  return Command{.kind = CommandKind::BULLET_MISSED};
 }
 
 bool color_is_transparent(const Color &color) {

@@ -106,6 +106,8 @@ struct App {
         active_worm = (active_worm + 1) % wrms.size();
       } else if (command.kind == CommandKind::SMOKE) {
         smokes.push_back(Smoke{command.smoke_pos});
+      } else if (command.kind == CommandKind::BULLET_MISSED) {
+        active_worm = (active_worm + 1) % wrms.size();
       } else {
         TraceLog(LOG_ERROR, "Invalid command");
       }
