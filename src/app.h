@@ -26,16 +26,29 @@ struct App {
     SetTargetFPS(120);
 
     background_texture = LoadTexture("./data/background_1.png");
-    foreground_image = LoadImage("./data/foreground_1.png");
 
-    wrms.emplace_back(Vector2{100.0f, 100.0f}, true, Color{0xff, 0xcc, 0xcc, 0xff});
-    wrms.emplace_back(Vector2{(float)SCREEN_WIDTH - 100.0f, 100.0f}, false, Color{0xcc, 0xcc, 0xff, 0xff});
-    active_worm = 0;
+    reset();
   }
 
   ~App() {
     UnloadImage(foreground_image);
     CloseWindow();
+  }
+
+  void reset() {
+    bullets.clear();
+    smokes.clear();
+    rumbles.clear();
+
+    wrms.clear();
+    wrms.emplace_back(Vector2{100.0f, 100.0f}, true, Color{0xff, 0xcc, 0xcc, 0xff});
+    wrms.emplace_back(Vector2{(float)SCREEN_WIDTH - 100.0f, 100.0f}, false, Color{0xcc, 0xcc, 0xff, 0xff});
+    wrms.emplace_back(Vector2{300.0f, 0.0f}, true, Color{0xff, 0xcc, 0xcc, 0xff});
+    wrms.emplace_back(Vector2{(float)SCREEN_WIDTH - 300.0f, 0.0f}, false, Color{0xcc, 0xcc, 0xff, 0xff});
+
+    foreground_image = LoadImage("./data/foreground_1.png");
+
+    active_worm = 0;
   }
 
   void loop() {
@@ -65,6 +78,11 @@ struct App {
   }
 
   void update(Color *colors) {
+    if (IsKeyPressed(KEY_R)) {
+      reset();
+      return;
+    }
+
     std::vector<Command> output_commands{};
 
     std::vector<Hittable *> hittables{};

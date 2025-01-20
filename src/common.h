@@ -40,6 +40,10 @@ bool out_of_screen(Vector2 const &pos) {
   return pos.x < 0 || pos.y < 0 || pos.x >= SCREEN_WIDTH || pos.y >= SCREEN_HEIGHT;
 }
 
+bool out_of_screen_sides_or_down(Vector2 const &pos) {
+  return pos.x < 0 || pos.x >= SCREEN_WIDTH || pos.y >= SCREEN_HEIGHT;
+}
+
 struct Gravity {
   float value{0.0f};
 

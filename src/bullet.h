@@ -29,7 +29,7 @@ struct Bullet {
     pos.x += vx;
     pos.y += g.value;
 
-    if (out_of_screen(pos)) {
+    if (out_of_screen_sides_or_down(pos)) {
       output_commands.push_back(make_bullet_missed_command());
       is_dead = true;
       return;
@@ -43,7 +43,7 @@ struct Bullet {
       }
     }
 
-    if (!color_is_transparent(colors[(int)pos.y * SCREEN_WIDTH + (int)pos.x])) {
+    if (pos.y >= 0 && !color_is_transparent(colors[(int)pos.y * SCREEN_WIDTH + (int)pos.x])) {
       output_commands.push_back(make_explosion_command(pos, BULLET_EXPLOSION_ZONE_RADIUS, BULLET_EXPLOSION_POWER));
       is_dead = true;
       return;
