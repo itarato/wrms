@@ -19,6 +19,7 @@ struct App {
   std::vector<Smoke> smokes{};
   std::vector<Rumble> rumbles{};
   Image foreground_image;
+  Color *foreground_colors;
   Texture2D background_texture;
 
   App() {
@@ -32,6 +33,7 @@ struct App {
 
   ~App() {
     UnloadImage(foreground_image);
+    UnloadImageColors(foreground_colors);
     CloseWindow();
   }
 
@@ -47,17 +49,14 @@ struct App {
     wrms.emplace_back(Vector2{(float)SCREEN_WIDTH - 300.0f, 0.0f}, false, Color{0xcc, 0xcc, 0xff, 0xff});
 
     foreground_image = LoadImage("./data/foreground_1.png");
+    foreground_colors = LoadImageColors(foreground_image);
 
     active_worm = 0;
   }
 
   void loop() {
     while (!WindowShouldClose()) {
-      Color *colors = LoadImageColors(foreground_image);
-
-      update(colors);
-
-      UnloadImageColors(colors);
+      update(foreground_colors);
 
       BeginDrawing();
       ClearBackground(RAYWHITE);
@@ -121,6 +120,7 @@ struct App {
         ImageDrawCircle(&foreground_image, command.explosion.pos.x, command.explosion.pos.y, command.explosion.radius,
                         FAKE_TRANSPARENT_COLOR);
         ImageColorReplace(&foreground_image, FAKE_TRANSPARENT_COLOR, TRANSPARENT_COLOR);
+        foreground_colors = LoadImageColors(foreground_image);
 
         for (int i = 0; i < APP_RUMBLE_COUNT; i++) {
           rumbles.push_back(make_rumble(command.explosion.pos, command.explosion.radius));
