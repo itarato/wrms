@@ -35,50 +35,53 @@ struct Wrm : Hittable {
     frame = Vector2{(float)texture_left.width, (float)texture_left.height};
   }
 
-  void draw() const {
-    Vector2 fire_center = get_fire_center();
+  void draw(bool has_control) const {
+    if (has_control) {
+      Vector2 fire_center = get_fire_center();
 
-    if (shoot_force > 0.0f) {
-      float force_percentage = shoot_force / (float)WRM_SHOOT_MAX_FORCE;
-      Vector2 force_end_pos{
-          sinf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST * force_percentage + fire_center.x,
-          cosf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST * force_percentage + fire_center.y,
+      if (shoot_force > 0.0f) {
+        float force_percentage = shoot_force / (float)WRM_SHOOT_MAX_FORCE;
+        Vector2 force_end_pos{
+            sinf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST * force_percentage + fire_center.x,
+            cosf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST * force_percentage + fire_center.y,
+        };
+        DrawLineEx(get_fire_center(), force_end_pos, 10.0,
+                   Color{u_int8_t(255.0f * shoot_force / WRM_SHOOT_MAX_FORCE), 0x00, 0x00, 0xff});
+      }
+
+      Vector2 aim_pos{
+          sinf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST + fire_center.x,
+          cosf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST + fire_center.y,
       };
-      DrawLineEx(get_fire_center(), force_end_pos, 10.0,
-                 Color{u_int8_t(255.0f * shoot_force / WRM_SHOOT_MAX_FORCE), 0x00, 0x00, 0xff});
+      DrawTexturePro(texture_aim,
+                     {
+                         0.0f,
+                         0.0f,
+                         (float)texture_aim.width,
+                         (float)texture_aim.height,
+                     },
+                     {
+                         aim_pos.x,
+                         aim_pos.y,
+                         (float)texture_aim.width,
+                         (float)texture_aim.height,
+                     },
+                     {
+
+                         (float)texture_aim.width / 2,
+                         (float)texture_aim.height / 2,
+
+                     },
+                     -get_aim_angle(), WHITE);
     }
 
+    // Draw body.
     Vector2 texture_draw_pos = Vector2Subtract(pos, {frame.x / 2, frame.y});
     if (is_dir_right) {
       DrawTextureV(texture_right, texture_draw_pos, tint);
     } else {
       DrawTextureV(texture_left, texture_draw_pos, tint);
     }
-
-    Vector2 aim_pos{
-        sinf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST + fire_center.x,
-        cosf(DEG2RAD * get_aim_angle()) * WRM_AIM_CROSS_DIST + fire_center.y,
-    };
-    DrawTexturePro(texture_aim,
-                   {
-                       0.0f,
-                       0.0f,
-                       (float)texture_aim.width,
-                       (float)texture_aim.height,
-                   },
-                   {
-                       aim_pos.x,
-                       aim_pos.y,
-                       (float)texture_aim.width,
-                       (float)texture_aim.height,
-                   },
-                   {
-
-                       (float)texture_aim.width / 2,
-                       (float)texture_aim.height / 2,
-
-                   },
-                   -get_aim_angle(), WHITE);
 
     // Draw life.
     Rectangle life_rec{pos.x - 15.0f, pos.y - frame.y - 30.0f, 30.0f, 18.0f};
@@ -170,7 +173,7 @@ struct Wrm : Hittable {
         int fallen_y = pos.y + g.value;
         if (fallen_y > floor_y) {  // Reached floor.
           pos.y = floor_y;
-          g.reset();
+          g.bounce();
         } else {  // Free falling.
           pos.y = fallen_y;
         }

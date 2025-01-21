@@ -10,6 +10,8 @@
 #define GRAVITY_DEC 0.98f
 #define GRAVITY_INC 1.03f
 #define GRAVITY_BOOSTER_ADJUSTMENT 0.1f
+#define GRAVITY_BOUNCE_START_THRESHOLD 8.0f
+#define GRAVITY_BOUNCE_RATE 0.2f
 
 const Color FAKE_TRANSPARENT_COLOR = MAGENTA;
 const Color TRANSPARENT_COLOR = Color{0x0, 0x0, 0x0, 0x00};
@@ -57,6 +59,14 @@ struct Gravity {
 
   void reset() {
     value = 0.0f;
+  }
+
+  void bounce() {
+    if (value >= GRAVITY_BOUNCE_START_THRESHOLD) {
+      value *= -GRAVITY_BOUNCE_RATE;
+    } else {
+      reset();
+    }
   }
 
   bool rise() const {

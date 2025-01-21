@@ -72,7 +72,6 @@ struct App {
       draw();
 
       DrawFPS(10, 10);
-      DrawText(TextFormat("Frame time: %.4f", GetFrameTime()), 10, 40, 20, BLACK);
 
       EndDrawing();
     }
@@ -158,8 +157,8 @@ struct App {
   }
 
   void draw() const {
-    for (auto &wrm : wrms) {
-      wrm.draw();
+    for (int i = 0; i < (int)wrms.size(); i++) {
+      wrms[i].draw(i == active_worm);
     }
 
     for (auto &bullet : bullets) {
