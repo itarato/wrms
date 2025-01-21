@@ -21,6 +21,7 @@ struct App {
   Image foreground_image;
   Color *foreground_colors;
   Texture2D background_texture;
+  Texture2D foreground_texture;
 
   App() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Wrms");
@@ -33,7 +34,10 @@ struct App {
 
   ~App() {
     UnloadImage(foreground_image);
+
     UnloadImageColors(foreground_colors);
+    UnloadTexture(foreground_texture);
+
     CloseWindow();
   }
 
@@ -49,6 +53,7 @@ struct App {
     wrms.emplace_back(Vector2{(float)SCREEN_WIDTH - 300.0f, 0.0f}, false, Color{0xcc, 0xcc, 0xff, 0xff});
 
     foreground_image = LoadImage("./data/foreground_1.png");
+    foreground_texture = LoadTextureFromImage(foreground_image);
     foreground_colors = LoadImageColors(foreground_image);
 
     active_worm = 0;
@@ -62,8 +67,6 @@ struct App {
       ClearBackground(RAYWHITE);
 
       DrawTexture(background_texture, 0, 0, WHITE);
-
-      Texture2D foreground_texture = LoadTextureFromImage(foreground_image);
       DrawTexture(foreground_texture, 0, 0, WHITE);
 
       draw();
@@ -72,8 +75,6 @@ struct App {
       DrawText(TextFormat("Frame time: %.4f", GetFrameTime()), 10, 40, 20, BLACK);
 
       EndDrawing();
-
-      UnloadTexture(foreground_texture);
     }
   }
 
@@ -120,7 +121,14 @@ struct App {
         ImageDrawCircle(&foreground_image, command.explosion.pos.x, command.explosion.pos.y, command.explosion.radius,
                         FAKE_TRANSPARENT_COLOR);
         ImageColorReplace(&foreground_image, FAKE_TRANSPARENT_COLOR, TRANSPARENT_COLOR);
+
+        if (foreground_colors) {
+          UnloadImageColors(foreground_colors);
+        }
         foreground_colors = LoadImageColors(foreground_image);
+
+        UnloadTexture(foreground_texture);
+        foreground_texture = LoadTextureFromImage(foreground_image);
 
         for (int i = 0; i < APP_RUMBLE_COUNT; i++) {
           rumbles.push_back(make_rumble(command.explosion.pos, command.explosion.radius));
