@@ -69,7 +69,8 @@ struct App {
 
       draw();
 
-      DrawFPS(0, 0);
+      DrawFPS(10, 10);
+      DrawText(TextFormat("Frame time: %.4f", GetFrameTime()), 10, 40, 20, BLACK);
 
       EndDrawing();
 
