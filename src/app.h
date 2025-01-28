@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "bullet.h"
+#include "client.h"
 #include "common.h"
 #include "wrm.h"
 
@@ -22,8 +23,9 @@ struct App {
   Color *foreground_colors;
   Texture2D background_texture;
   Texture2D foreground_texture;
+  Client client;
 
-  App() {
+  App(const char *client_host, const char *client_port) : client(client_host, client_port) {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Wrms");
     SetTargetFPS(120);
 
@@ -81,6 +83,11 @@ struct App {
     if (IsKeyPressed(KEY_R)) {
       reset();
       return;
+    }
+
+    if (IsKeyPressed(KEY_C) && !client.connected) {
+      client.start();
+      TraceLog(LOG_INFO, "Client started");
     }
 
     std::vector<Command> output_commands{};
