@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
   SharedMsgQueue<NetPackage>* queue = new SharedMsgQueue<NetPackage>();
   std::thread server_thread(server_thread_call, server_port, queue, &is_over);
 
-  App app{client_host, client_port};
+  App app{client_host, client_port, queue};
   app.loop();
 
   is_over.store(true);

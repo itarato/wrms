@@ -18,7 +18,9 @@ struct NetPackageMove {
 struct NetPackageExplode {
   float x;
   float y;
-  float power;
+  float radius;
+  // TODO: keep in mind when scaling wrm number.
+  char new_health[4];
 };
 
 struct NetPackageShoot {

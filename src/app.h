@@ -9,6 +9,8 @@
 #include "bullet.h"
 #include "client.h"
 #include "common.h"
+#include "net_package.h"
+#include "shared_msg_queue.h"
 #include "wrm.h"
 
 #define APP_RUMBLE_COUNT 60
@@ -24,8 +26,10 @@ struct App {
   Texture2D background_texture;
   Texture2D foreground_texture;
   Client client;
+  SharedMsgQueue<NetPackage> *msg_queue;
 
-  App(const char *client_host, const char *client_port) : client(client_host, client_port) {
+  App(const char *client_host, const char *client_port, SharedMsgQueue<NetPackage> *msg_queue)
+      : client(client_host, client_port), msg_queue(msg_queue) {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Wrms");
     SetTargetFPS(120);
 
@@ -49,10 +53,10 @@ struct App {
     rumbles.clear();
 
     wrms.clear();
-    wrms.emplace_back(Vector2{100.0f, 100.0f}, true, Color{0xff, 0xcc, 0xcc, 0xff});
-    wrms.emplace_back(Vector2{(float)SCREEN_WIDTH - 100.0f, 100.0f}, false, Color{0xcc, 0xcc, 0xff, 0xff});
-    wrms.emplace_back(Vector2{300.0f, 0.0f}, true, Color{0xff, 0xcc, 0xcc, 0xff});
-    wrms.emplace_back(Vector2{(float)SCREEN_WIDTH - 300.0f, 0.0f}, false, Color{0xcc, 0xcc, 0xff, 0xff});
+    wrms.emplace_back(0, Vector2{100.0f, 100.0f}, true, Color{0xff, 0xcc, 0xcc, 0xff}, &client);
+    wrms.emplace_back(1, Vector2{(float)SCREEN_WIDTH - 100.0f, 100.0f}, false, Color{0xcc, 0xcc, 0xff, 0xff}, &client);
+    wrms.emplace_back(2, Vector2{300.0f, 0.0f}, true, Color{0xff, 0xcc, 0xcc, 0xff}, &client);
+    wrms.emplace_back(3, Vector2{(float)SCREEN_WIDTH - 300.0f, 0.0f}, false, Color{0xcc, 0xcc, 0xff, 0xff}, &client);
 
     foreground_image = LoadImage("./data/foreground_1.png");
     foreground_texture = LoadTextureFromImage(foreground_image);
@@ -124,21 +128,7 @@ struct App {
       if (command.kind == CommandKind::FIRE) {
         bullets.emplace_back(command.fire);
       } else if (command.kind == CommandKind::EXPLOSION) {
-        ImageDrawCircle(&foreground_image, command.explosion.pos.x, command.explosion.pos.y, command.explosion.radius,
-                        FAKE_TRANSPARENT_COLOR);
-        ImageColorReplace(&foreground_image, FAKE_TRANSPARENT_COLOR, TRANSPARENT_COLOR);
-
-        if (foreground_colors) {
-          UnloadImageColors(foreground_colors);
-        }
-        foreground_colors = LoadImageColors(foreground_image);
-
-        UnloadTexture(foreground_texture);
-        foreground_texture = LoadTextureFromImage(foreground_image);
-
-        for (int i = 0; i < APP_RUMBLE_COUNT; i++) {
-          rumbles.push_back(make_rumble(command.explosion.pos, command.explosion.radius));
-        }
+        register_explosion_on_map(command.explosion.pos, command.explosion.radius);
 
         active_worm = (active_worm + 1) % wrms.size();
 
@@ -153,6 +143,19 @@ struct App {
           }
           wrm.life -= damage;
         }
+
+        if (client.connected) {
+          client.send_msg(NetPackage{
+              .explode =
+                  {
+                      .x = command.explosion.pos.x,
+                      .y = command.explosion.pos.y,
+                      .radius = command.explosion.radius,
+                      .new_health = {(char)wrms[0].life, (char)wrms[1].life, (char)wrms[2].life, (char)wrms[3].life},
+                  },
+              .kind = NetPackageKind::Explode,
+          });
+        }
       } else if (command.kind == CommandKind::SMOKE) {
         smokes.push_back(Smoke{command.smoke_pos});
       } else if (command.kind == CommandKind::BULLET_MISSED) {
@@ -161,6 +164,8 @@ struct App {
         TraceLog(LOG_ERROR, "Invalid command");
       }
     }
+
+    update_from_network_messages();
   }
 
   void draw() const {
@@ -178,6 +183,51 @@ struct App {
 
     for (auto &rumble : rumbles) {
       rumble.draw();
+    }
+  }
+
+  void register_explosion_on_map(Vector2 pos, float r) {
+    ImageDrawCircle(&foreground_image, pos.x, pos.y, r, FAKE_TRANSPARENT_COLOR);
+    ImageColorReplace(&foreground_image, FAKE_TRANSPARENT_COLOR, TRANSPARENT_COLOR);
+
+    if (foreground_colors) {
+      UnloadImageColors(foreground_colors);
+    }
+    foreground_colors = LoadImageColors(foreground_image);
+
+    UnloadTexture(foreground_texture);
+    foreground_texture = LoadTextureFromImage(foreground_image);
+
+    for (int i = 0; i < APP_RUMBLE_COUNT; i++) {
+      rumbles.push_back(make_rumble(pos, r));
+    }
+  }
+
+  void update_from_network_messages() {
+    while (true) {
+      auto pack_result = msg_queue->pop();
+      if (pack_result.has_value()) {
+        apply_net_package(std::move(pack_result.value()));
+      } else {
+        break;
+      }
+    }
+  }
+
+  void apply_net_package(NetPackage &&pack) {
+    if (pack.kind == NetPackageKind::Move) {
+      wrms[pack.move.wrm_index].pos.x = pack.move.x;
+      wrms[pack.move.wrm_index].pos.y = pack.move.y;
+      wrms[pack.move.wrm_index].__aim_angle = pack.move.angle;
+      wrms[pack.move.wrm_index].is_dir_right = pack.move.dir;
+    } else if (pack.kind == NetPackageKind::Explode) {
+      register_explosion_on_map({pack.explode.x, pack.explode.y}, pack.explode.radius);
+      wrms[0].life = (int)pack.explode.new_health[0];
+      wrms[1].life = (int)pack.explode.new_health[1];
+      wrms[2].life = (int)pack.explode.new_health[2];
+      wrms[3].life = (int)pack.explode.new_health[3];
+    } else {
+      TraceLog(LOG_ERROR, "Unhandled net package kind");
     }
   }
 };

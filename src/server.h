@@ -133,16 +133,23 @@ struct Server {
           fprintf(stderr, "Connection ended.\n");
           break;
         } else {
-          if (incoming_bytes_len != NET_PACKAGE_BYTE_LEN) {
-            fprintf(stderr, "incoming message lenght is not net-package sized");
-            continue;
+          int len_ptr = 0;
+          while (len_ptr + (int)NET_PACKAGE_BYTE_LEN <= incoming_bytes_len) {
+            NetPackage pack;
+            memcpy(&pack, incoming_buf + len_ptr, NET_PACKAGE_BYTE_LEN);
+            queue->push(std::move(pack));
+
+            len_ptr += NET_PACKAGE_BYTE_LEN;
+
+            // printf("Incoming (%d) bytes\n", incoming_bytes_len);
           }
 
-          NetPackage pack;
-          memcpy(&pack, incoming_buf, incoming_bytes_len);
-          queue->push(std::move(pack));
-
-          printf("Incoming (%d) bytes\n", incoming_bytes_len);
+          if (len_ptr != incoming_bytes_len) {
+            fprintf(stderr,
+                    "Incoming message lenght is not multiple of net-package size. Expected: X * %ld. Got: %d.\n",
+                    NET_PACKAGE_BYTE_LEN, incoming_bytes_len);
+            continue;
+          }
         }
       }
 

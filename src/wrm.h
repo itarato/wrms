@@ -3,6 +3,7 @@
 #include <raylib.h>
 #include <raymath.h>
 
+#include "client.h"
 #include "common.h"
 
 #define WRM_HSPEED 0.4f
@@ -16,6 +17,7 @@
 #define WRM_ON_THE_GROUND_THRESHOLD 10.0f
 
 struct Wrm : Hittable {
+  unsigned char id;
   Vector2 pos;
   Vector2 frame;
   Gravity g{};
@@ -27,8 +29,10 @@ struct Wrm : Hittable {
   Texture2D texture_aim;
   int life{100};
   Color tint;
+  Client *client;
 
-  Wrm(Vector2 pos, bool is_dir_right, Color tint) : pos(pos), is_dir_right(is_dir_right), tint(tint) {
+  Wrm(unsigned char id, Vector2 pos, bool is_dir_right, Color tint, Client *client)
+      : id(id), pos(pos), is_dir_right(is_dir_right), tint(tint), client(client) {
     texture_left = LoadTexture("./data/ghost_left.png");
     texture_right = LoadTexture("./data/ghost_right.png");
     texture_aim = LoadTexture("./data/aim.png");
@@ -133,6 +137,18 @@ struct Wrm : Hittable {
   void update_movement(Color *colors, bool has_control) {
     update_vertical_movement(colors, has_control);
     update_horizontal_movement(colors, has_control);
+
+    if (client->connected) {
+      client->send_msg(NetPackage{.move =
+                                      {
+                                          .x = pos.x,
+                                          .y = pos.y,
+                                          .angle = __aim_angle,
+                                          .wrm_index = id,
+                                          .dir = is_dir_right,
+                                      },
+                                  .kind = NetPackageKind::Move});
+    }
   }
 
   void update_vertical_movement(Color *colors, bool has_control) {
