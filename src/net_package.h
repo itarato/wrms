@@ -27,7 +27,7 @@ struct NetPackageShoot {
   float x;
   float y;
   float angle;
-  float power;
+  float force;
 };
 
 struct NetPackage {

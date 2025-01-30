@@ -126,7 +126,20 @@ struct App {
 
     for (Command command : output_commands) {
       if (command.kind == CommandKind::FIRE) {
-        bullets.emplace_back(command.fire);
+        bullets.emplace_back(command.fire.pos, command.fire.angle, command.fire.force, false);
+
+        if (client.connected) {
+          client.send_msg(NetPackage{
+              .shoot =
+                  {
+                      .x = command.fire.pos.x,
+                      .y = command.fire.pos.y,
+                      .angle = command.fire.angle,
+                      .force = command.fire.force,
+                  },
+              .kind = NetPackageKind::Shoot,
+          });
+        }
       } else if (command.kind == CommandKind::EXPLOSION) {
         register_explosion_on_map(command.explosion.pos, command.explosion.radius);
 
@@ -187,6 +200,8 @@ struct App {
   }
 
   void register_explosion_on_map(Vector2 pos, float r) {
+    if (r == 0.0f) return;
+
     ImageDrawCircle(&foreground_image, pos.x, pos.y, r, FAKE_TRANSPARENT_COLOR);
     ImageColorReplace(&foreground_image, FAKE_TRANSPARENT_COLOR, TRANSPARENT_COLOR);
 
@@ -226,6 +241,13 @@ struct App {
       wrms[1].life = (int)pack.explode.new_health[1];
       wrms[2].life = (int)pack.explode.new_health[2];
       wrms[3].life = (int)pack.explode.new_health[3];
+
+      // Kill network owned rocket.
+      bullets.erase(
+          std::remove_if(bullets.begin(), bullets.end(), [](const auto &bullet) { return bullet.network_operated; }),
+          bullets.end());
+    } else if (pack.kind == NetPackageKind::Shoot) {
+      bullets.emplace_back(Vector2{pack.shoot.x, pack.shoot.y}, pack.shoot.angle, pack.shoot.force, true);
     } else {
       TraceLog(LOG_ERROR, "Unhandled net package kind");
     }
