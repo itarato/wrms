@@ -4,7 +4,6 @@ enum class NetPackageKind {
   Move,
   Shoot,
   Explode,
-  TurnOver,
 };
 
 struct NetPackageMove {

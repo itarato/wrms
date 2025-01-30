@@ -138,7 +138,7 @@ struct Wrm : Hittable {
     update_vertical_movement(colors, has_control);
     update_horizontal_movement(colors, has_control);
 
-    if (client->connected) {
+    if (client->connected && has_control) {
       client->send_msg(NetPackage{.move =
                                       {
                                           .x = pos.x,

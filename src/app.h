@@ -27,6 +27,7 @@ struct App {
   Texture2D foreground_texture;
   Client client;
   SharedMsgQueue<NetPackage> *msg_queue;
+  int team_mod_selector;
 
   App(const char *client_host, const char *client_port, SharedMsgQueue<NetPackage> *msg_queue)
       : client(client_host, client_port), msg_queue(msg_queue) {
@@ -34,6 +35,8 @@ struct App {
     SetTargetFPS(120);
 
     background_texture = LoadTexture("./data/background_1.png");
+
+    team_mod_selector = atoi(client_port) % 2;
 
     reset();
   }
@@ -120,7 +123,7 @@ struct App {
                   rumbles.end());
 
     for (int i = 0; i < (int)wrms.size(); i++) {
-      bool has_control = i == active_worm;
+      bool has_control = (i == active_worm) && (team_mod_selector == i % 2);
       wrms[i].update(output_commands, colors, has_control);
     }
 
@@ -143,7 +146,7 @@ struct App {
       } else if (command.kind == CommandKind::EXPLOSION) {
         register_explosion_on_map(command.explosion.pos, command.explosion.radius);
 
-        active_worm = (active_worm + 1) % wrms.size();
+        set_next_wrm_active();
 
         for (auto &wrm : wrms) {
           float explosion_distance = Vector2Distance(wrm.pos, command.explosion.pos);
@@ -172,7 +175,20 @@ struct App {
       } else if (command.kind == CommandKind::SMOKE) {
         smokes.push_back(Smoke{command.smoke_pos});
       } else if (command.kind == CommandKind::BULLET_MISSED) {
-        active_worm = (active_worm + 1) % wrms.size();
+        set_next_wrm_active();
+
+        if (client.connected) {
+          client.send_msg(NetPackage{
+              .explode =
+                  {
+                      .x = command.explosion.pos.x,
+                      .y = command.explosion.pos.y,
+                      .radius = 0.0f,
+                      .new_health = {(char)wrms[0].life, (char)wrms[1].life, (char)wrms[2].life, (char)wrms[3].life},
+                  },
+              .kind = NetPackageKind::Explode,
+          });
+        }
       } else {
         TraceLog(LOG_ERROR, "Invalid command");
       }
@@ -197,6 +213,16 @@ struct App {
     for (auto &rumble : rumbles) {
       rumble.draw();
     }
+
+    const char *connected_str;
+    if (client.connected) {
+      connected_str = "connected";
+    } else {
+      connected_str = "not connected";
+    }
+    DrawText(TextFormat("Other host: %s port: %s (%s) | Player #%d | Current wrm: %d", client.host, client.port,
+                        connected_str, team_mod_selector, active_worm),
+             10, GetScreenHeight() - 30, 20, WHITE);
   }
 
   void register_explosion_on_map(Vector2 pos, float r) {
@@ -229,6 +255,10 @@ struct App {
     }
   }
 
+  void set_next_wrm_active() {
+    active_worm = (active_worm + 1) % wrms.size();
+  }
+
   void apply_net_package(NetPackage &&pack) {
     if (pack.kind == NetPackageKind::Move) {
       wrms[pack.move.wrm_index].pos.x = pack.move.x;
@@ -246,6 +276,8 @@ struct App {
       bullets.erase(
           std::remove_if(bullets.begin(), bullets.end(), [](const auto &bullet) { return bullet.network_operated; }),
           bullets.end());
+
+      set_next_wrm_active();
     } else if (pack.kind == NetPackageKind::Shoot) {
       bullets.emplace_back(Vector2{pack.shoot.x, pack.shoot.y}, pack.shoot.angle, pack.shoot.force, true);
     } else {
